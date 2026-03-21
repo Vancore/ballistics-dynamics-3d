@@ -12,31 +12,55 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+    .stApp {
+        background-color: #000617;
+    }
+    header {
+        background-color: rgba(0,0,0,0) !important;
+    }
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono&display=swap');
 
     .main {
-        background: radial-gradient(circle at top right, #1a1c2c, #0a0a0e);
+        background: radial-gradient(circle at top right, #2c2f48, #050508);
         color: #ffffff;
+        background-color: transparent !important;
     }
     
     [data-testid="stSidebar"] {
-        background-color: rgba(15, 15, 25, 0.95);
+        background-color: rgba(9, 1, 28, 0.95);
         border-right: 2px solid #3e3e4e;
+    }
+    [data-testid="stNumberInput"], [data-testid="stTextInput"], .stSelectbox, button {
+        transition: all 0.3s ease-in-out !important;
+        border-radius: 0px !important;
+    }
+
+    [data-testid="stNumberInput"]:hover, 
+    .stMetric:hover, 
+    button:hover {
+        transform: translateY(-4px);
+        border-color: #00f2ff !important;
+        filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.6));
+    }
+
+    [data-testid="stNumberInput"] div[data-baseweb="input"] {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 242, 255, 0.1) !important;
+        background-color: rgba(0, 242, 255, 0.02) !important;
+        border-radius: 0px !important;
+    }
+
+    [data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within {
+        border-color: #00f2ff !important;
+        box-shadow: 0 0 20px rgba(0, 242, 255, 0.3) !important;
     }
 
     .stMetric {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(0, 255, 255, 0.2);
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
         padding: 20px !important;
-        border-radius: 15px;
-        transition: transform 0.3s;
-    }
-    
-    .stMetric:hover {
-        transform: translateY(-5px);
-        border-color: #00f2ff;
-        box-shadow: 0 0 25px rgba(0, 242, 255, 0.3);
+        border-radius: 16px;
+        transition: all 0.3s ease;
     }
 
     h1 {
@@ -53,7 +77,7 @@ st.markdown("""
 
     .stDataFrame {
         border: 1px solid #3e3e4e;
-        border-radius: 10px;
+        border-radius: 8px;
     }
     
     p, label {
@@ -63,7 +87,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Ballistics Dynamics 3D")
+st.title("Ballistic Modeling System")
 
 if 'hist' not in st.session_state:
     st.session_state.hist = []
@@ -226,9 +250,31 @@ for i in st.session_state.hist:
                                line=dict(width=3, dash='dot'), name=i['n']))
 
 fig.update_layout(
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
     template="plotly_dark", height=700, margin=dict(l=0, r=0, t=0, b=0),
-    scene=dict(xaxis_title="Distance X", yaxis_title="Drift Z", zaxis_title="Altitude Y",
-               aspectratio=dict(x=2, y=1, z=1))
+    scene=dict(
+        bgcolor='rgba(0,0,0,0)', 
+        xaxis_title="Distance X", 
+        yaxis_title="Drift Z", 
+        zaxis_title="Altitude Y",
+        aspectratio=dict(x=2, y=1, z=1),
+        xaxis=dict(
+            backgroundcolor="rgba(0, 0, 0, 0)",
+            gridcolor="#3e3e4e",
+            showbackground=True
+        ),
+        yaxis=dict(
+            backgroundcolor="rgba(0, 0, 0, 0)", 
+            gridcolor="#3e3e4e",
+            showbackground=True
+        ),
+        zaxis=dict(
+            backgroundcolor="rgba(0, 0, 0, 0)", 
+            gridcolor="#3e3e4e",
+            showbackground=True
+        )
+    )
 )
 
 st.plotly_chart(fig, use_container_width=True)
