@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from PIL import Image
 
 st.set_page_config(
-    page_title="Ballistic Modeling System PRO",
+    page_title="Ballistics Dynamics 3D",
     page_icon=Image.open("logo.png"),
     layout="wide"
 )
@@ -90,9 +90,9 @@ if env == "Atmosphere":
     st.sidebar.header("🌍 Atmospheric Data")
     pd1 = prs[pr]
     if pr == "Custom":
-        m = st.sidebar.number_input("Mass (kg):", value=pd1["m"], format="%.3f", step=0.01)
-        cw = st.sidebar.number_input("Drag Coefficient:", value=pd1["cw"], format="%.3f", step=0.001)
-        s = st.sidebar.number_input("Area (m²):", value=pd1["s"], format="%.5f", step=0.00001)
+        m = st.sidebar.number_input("Mass (kg):", value=pd1["m"], min_value=0.001, format="%.3f", step=0.01)
+        cw = st.sidebar.number_input("Drag Coefficient:", value=pd1["cw"], min_value=0.001, format="%.3f", step=0.001)
+        s = st.sidebar.number_input("Area (m²):", value=pd1["s"], min_value=0.00001, format="%.5f", step=0.00001)
     else:
         m, cw, s = pd1["m"], pd1["cw"], pd1["s"]
         st.sidebar.info(f"Mass: {m} kg | Cd: {cw} | Area: {s} m²")
@@ -103,6 +103,7 @@ if env == "Atmosphere":
     ws = st.sidebar.number_input("Wind Speed (m/s):", value=0.0, format="%.2f", step=0.1)
     wa = st.sidebar.number_input("Wind Angle (deg):", value=0.0, format="%.1f", step=1.0)
     sp = st.sidebar.number_input("Spin (RPM):", value=0.0, format="%.0f", step=10.0)
+    sa = st.sidebar.slider("Направление кручения (Spin Angle)", -180, 180, 0, step=5, help="0=Backspin, 90=Вправо, -90=Влево, 180=Topspin")
 else:
     m = cw = s = ro = ws = wa = sp = 1.0
 
@@ -134,26 +135,28 @@ def sim(ca, cz=0.0):
         t, x, y, z = 0.0, 0.0, 0.0, 0.0
         dt = 0.01
         hm = 0.0
+        sar = math.radians(sa)
 
-        while y >= 0 and t < 100:
+        while y >= 0 and t < 1000:
             xx.append(x); yy.append(y); zz.append(z); tt.append(t)
             vrx, vry, vrz = vx - wx, vy, vz - wz
             vv = math.sqrt(vrx**2 + vry**2 + vrz**2)
+            vh = math.sqrt(vrx**2 + vrz**2)
             
             r = ro * math.exp(-0.00012 * y)
             fd = 0.5 * cw * r * s * vv**2
             fl = 0.5 * (sp * 0.00001) * r * s * vv**2
+            fly = fl * math.cos(sar)
+            fll = fl * math.sin(sar)
             
             ax = -(fd * vrx / vv) / m if vv > 0 else 0
             ay = -g - (fd * vry / vv) / m if vv > 0 else -g
             az = -(fd * vrz / vv) / m if vv > 0 else 0
+            ay += (fly * vh / vv) / m if vv > 0 else 0
             
-            if vv > 0:
-                vh = math.sqrt(vrx**2 + vrz**2)
-                if vh > 0:
-                    ay += (fl * vh / vv) / m
-                    ax -= (fl * vry * vrx / (vv * vh)) / m
-                    az -= (fl * vry * vrz / (vv * vh)) / m
+            if vv > 0 and vh > 0:
+                ax += (fll * (-vrz / vh) * (vh / vv)) / m
+                az += (fll * (vrx / vh) * (vh / vv)) / m
 
             vx += ax * dt; vy += ay * dt; vz += az * dt
             x += vx * dt; y += vy * dt; z += vz * dt
@@ -197,7 +200,10 @@ if fnd:
                     me, ba = ne, ba + ad
 
         a1, a2 = ba, bz
-        st.sidebar.success(f"🎯 Ready: Elev={a1:.2f}°, Azi={a2:.2f}°")
+        if me > 5.0:
+            st.sidebar.warning(f"⚠️ Target out of reach! Best attempt: {me:.1f} m from target. Elev={a1:.2f}°")
+        else:
+            st.sidebar.success(f"🎯 Ready: Elev={a1:.2f}°, Azi={a2:.2f}°")
 
 rx, ry, rz, rt, d, h, rte, rfx, rfz = sim(a1, a2)
 
