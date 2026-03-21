@@ -204,10 +204,11 @@ rx, ry, rz, rt, d, h, rte, rfx, rfz = sim(a1, a2)
 if sv:
     st.session_state.hist.append({'x': rx, 'y': ry, 'z': rz, 'n': f"{pr} {a1:.1f}°/{a2:.1f}°"})
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 c1.metric("FINAL X", f"{rfx:.2f} m")
 c2.metric("APOGEE", f"{h:.2f} m")
 c3.metric("FINAL Z (DRIFT)", f"{rfz:.2f} m")
+c4.metric("FLIGHT TIME", f"{rte:.2f} s")
 
 fig = go.Figure()
 fig.add_trace(go.Scatter3d(x=rx, y=rz, z=ry, mode='lines', line=dict(color='#00f2ff', width=6), name='Active'))
