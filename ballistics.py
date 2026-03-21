@@ -84,6 +84,32 @@ st.markdown("""
         font-family: 'Roboto Mono', monospace;
         color: #a0a0c0 !important;
     }
+            
+
+    /* Фиксируем темный фон для полей ввода (инпутов) */
+    [data-testid="stNumberInput"] div[data-baseweb="input"], 
+    [data-testid="stTextInput"] div[data-baseweb="input"],
+    [data-testid="stSelectbox"] div[data-baseweb="select"] {
+        background-color: #050508 !important; /* Глубокий темный цвет */
+        color: white !important; /* Белый текст */
+    }
+
+    /* Фиксируем темный фон для таблиц (Dataframe) */
+    [data-testid="stTable"], [data-testid="stDataFrame"], [data-testid="stTable"] td {
+        background-color: #050508 !important;
+        color: #ffffff !important;
+    }
+
+    /* Исправляем цвет текста внутри таблиц, чтобы он не стал черным */
+    [data-testid="stDataFrame"] div[data-testid="stTable"] div {
+        color: #ffffff !important;
+    }
+
+    /* Чтобы выпадающий список (selectbox) тоже не белел */
+    div[data-baseweb="popover"] {
+        background-color: #050508 !important;
+        color: white !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
