@@ -101,9 +101,9 @@ if env == "Atmosphere":
     st.sidebar.markdown("---")
     st.sidebar.header("🌀 External Forces")
     ws = st.sidebar.number_input("Wind Speed (m/s):", value=0.0, format="%.2f", step=0.1)
-    wa = st.sidebar.number_input("Wind Angle (deg):", value=0.0, format="%.1f", step=1.0)
+    wa = st.sidebar.slider("Wind Angle (deg):", -180, 180, 0, step=5, help="0=Tailwind, 90=Right, -90=Left, 180=Headwind")
     sp = st.sidebar.number_input("Spin (RPM):", value=0.0, format="%.0f", step=10.0)
-    sa = st.sidebar.slider("Направление кручения (Spin Angle)", -180, 180, 0, step=5, help="0=Backspin, 90=Вправо, -90=Влево, 180=Topspin")
+    sa = st.sidebar.slider("Spin Angle (deg):", -180, 180, 0, step=5, help="0=Backspin, 90=Right, -90=Left, 180=Topspin")
 else:
     m = cw = s = ro = ws = wa = sp = 1.0
 
