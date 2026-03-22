@@ -226,11 +226,8 @@ def sim(ca, cz=0.0):
 
     else:
         y_end = min(0.0, ty - 10.0)
-        if g != 0:
-            D = vy**2 - 2 * g * y_end
-            te = (vy + math.sqrt(D)) / g if D >= 0 else 0
-        else:
-            te = 0
+        D = vy**2 - 2 * g * y_end
+        te = (vy + math.sqrt(D)) / g if D >= 0 else 0
         h = (vy**2) / (2 * g) if g != 0 else 0
         n = 100
         for i in range(n + 1):
