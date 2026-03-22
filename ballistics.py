@@ -91,12 +91,19 @@ st.title("Ballistic Modeling System")
 
 if 'hist' not in st.session_state:
     st.session_state.hist = []
+if 'a1' not in st.session_state:
+    st.session_state.a1 = 45.0
+if 'a2' not in st.session_state:
+    st.session_state.a2 = 0.0
+
+if 'hist' not in st.session_state:
+    st.session_state.hist = []
 
 st.sidebar.header("🚀 Primary Inputs")
 env = st.sidebar.radio("Environment:", ("Vacuum", "Atmosphere"))
 v = st.sidebar.number_input("Velocity (m/s):", value=60.0, format="%.2f", step=0.1)
-a1 = st.sidebar.number_input("Elevation (deg):", value=45.0, format="%.2f", step=0.1)
-a2 = st.sidebar.number_input("Azimuth (deg):", value=0.0, format="%.2f", step=0.1)
+a1 = st.sidebar.number_input("Elevation (deg):", value=st.session_state.a1, format="%.2f", step=0.1)
+a2 = st.sidebar.number_input("Azimuth (deg):", value=st.session_state.a2, format="%.2f", step=0.1)
 g = st.sidebar.number_input("Gravity (m/s²):", value=9.80665, format="%.4f", step=0.0001)
 
 pr = st.sidebar.selectbox("Projectile Preset:", ["Custom", "Arrow", "Howitzer Shell", "Golf Ball", "Human Cannonball"])
@@ -135,6 +142,7 @@ st.sidebar.markdown("---")
 st.sidebar.header("🎯 Targeting")
 tx = st.sidebar.number_input("Distance (m):", value=100.0, format="%.2f")
 tz = st.sidebar.number_input("Drift (m):", value=0.0, format="%.2f")
+ty = st.sidebar.number_input("Altitude Y (m):", value=0.0, format="%.2f", help="Target height offset")
 
 b1, b2, b3 = st.sidebar.columns(3)
 fnd = b1.button("Find Angle")
@@ -161,7 +169,7 @@ def sim(ca, cz=0.0):
         hm = 0.0
         sar = math.radians(sa)
 
-        while y >= 0 and t < 1000:
+        while y >= min(0.0, ty - 10.0) and t < 1000:
             xx.append(x); yy.append(y); zz.append(z); tt.append(t)
             vrx, vry, vrz = vx - wx, vy, vz - wz
             vv = math.sqrt(vrx**2 + vry**2 + vrz**2)
@@ -190,44 +198,59 @@ def sim(ca, cz=0.0):
         return xx, yy, zz, tt, math.sqrt(x**2 + z**2), hm, t, x, z
 
     else:
-        te = (2 * v * math.sin(r1)) / g if g != 0 else 0
-        dh = (v**2 * math.sin(2 * r1)) / g if g != 0 else 0
-        fx, fz = dh * math.cos(r2), dh * math.sin(r2)
-        h = (v**2 * (math.sin(r1)**2)) / (2 * g) if g != 0 else 0
+        y_end = min(0.0, ty - 10.0)
+        if g != 0:
+            D = vy**2 - 2 * g * y_end
+            te = (vy + math.sqrt(D)) / g if D >= 0 else 0
+        else:
+            te = 0
+        h = (vy**2) / (2 * g) if g != 0 else 0
         n = 100
         for i in range(n + 1):
+            if te == 0: break
             ct = (te / n) * i
-            xx.append(vx * ct); yy.append(max(0.0, vy * ct - 0.5 * g * ct**2))
-            zz.append(vz * ct); tt.append(ct)
+            xx.append(vx * ct)
+            yy.append(vy * ct - 0.5 * g * ct**2)
+            zz.append(vz * ct)
+            tt.append(ct)
+            
+        fx = xx[-1] if xx else 0
+        fz = zz[-1] if zz else 0
+        dh = math.sqrt(fx**2 + fz**2)
         return xx, yy, zz, tt, dh, h, te, fx, fz
 
 if fnd:
-    with st.spinner("Calculating optimal trajectory..."):
+    with st.spinner("Calculating optimal 3D trajectory..."):
         ba, bz = 45.0, math.degrees(math.atan2(tz, tx))
         me = float('inf')
-        
+        def get_error(ta, t_az):
+            xx, yy, zz, *_ = sim(ta, t_az)
+            if not xx: return float('inf')
+            return min(math.sqrt((x - tx)**2 + (y - ty)**2 + (z - tz)**2) for x, y, z in zip(xx, yy, zz))
         for ta in [x * 0.5 for x in range(1, 179)]:
-            *_, fx, fz = sim(ta, bz)
-            er = math.sqrt((fx - tx)**2 + (fz - tz)**2)
+            er = get_error(ta, bz)
             if er < me:
                 me, ba = er, ta
-        
         for _ in range(3):
-            *_, fx, fz = sim(ba, bz)
-            ea = math.degrees(math.atan2(tz, tx)) - math.degrees(math.atan2(fz, fx))
-            bz += ea
-            
+            xx, yy, zz, *_ = sim(ba, bz)
+            idx = min(range(len(xx)), key=lambda i: math.sqrt((xx[i] - tx)**2 + (yy[i] - ty)**2 + (zz[i] - tz)**2))
+            cx, cz = xx[idx], zz[idx]
+            if cx != 0:
+                ea = math.degrees(math.atan2(tz, tx)) - math.degrees(math.atan2(cz, cx))
+                bz += ea
             for ad in [-0.2, -0.1, 0, 0.1, 0.2]:
-                *_, nx, nz = sim(ba + ad, bz)
-                ne = math.sqrt((nx - tx)**2 + (nz - tz)**2)
+                ne = get_error(ba + ad, bz)
                 if ne < me:
                     me, ba = ne, ba + ad
 
         a1, a2 = ba, bz
         if me > 5.0:
-            st.sidebar.warning(f"⚠️ Target out of reach! Best attempt: {me:.1f} m from target. Elev={a1:.2f}°")
+            st.toast(f"⚠️ Target out of reach! Best attempt: {me:.1f}m error.", icon="⚠️")
         else:
-            st.sidebar.success(f"🎯 Ready: Elev={a1:.2f}°, Azi={a2:.2f}°")
+            st.toast(f"🎯 Target Locked! Elev={ba:.2f}°, Azi={bz:.2f}°", icon="🎯")
+        st.session_state.a1 = float(ba)
+        st.session_state.a2 = float(bz)
+        st.rerun()
 
 rx, ry, rz, rt, d, h, rte, rfx, rfz = sim(a1, a2)
 
@@ -242,7 +265,7 @@ c4.metric("FLIGHT TIME", f"{rte:.2f} s")
 
 fig = go.Figure()
 fig.add_trace(go.Scatter3d(x=rx, y=rz, z=ry, mode='lines', line=dict(color='#00f2ff', width=6), name='Active'))
-fig.add_trace(go.Scatter3d(x=[tx], y=[tz], z=[0], mode='markers', 
+fig.add_trace(go.Scatter3d(x=[tx], y=[tz], z=[ty], mode='markers', 
                           marker=dict(size=8, color='red', symbol='diamond'), name='Target'))
 
 for i in st.session_state.hist:
