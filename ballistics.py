@@ -87,7 +87,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Ballistics System")
+st.title("Ballistic System")
 
 if 'hist' not in st.session_state:
     st.session_state.hist = []
