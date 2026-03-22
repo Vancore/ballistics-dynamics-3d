@@ -87,7 +87,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Advanced Ballistics Simulation 3D")
+st.title("Ballistics System")
 
 if 'hist' not in st.session_state:
     st.session_state.hist = []
@@ -98,8 +98,12 @@ if 'a1' not in st.session_state:
 if 'a2' not in st.session_state:
     st.session_state.a2 = 0.0
 
-if 'hist' not in st.session_state:
-    st.session_state.hist = []
+if 'new_a1' in st.session_state:
+    st.session_state.a1 = st.session_state.new_a1
+    del st.session_state.new_a1
+if 'new_a2' in st.session_state:
+    st.session_state.a2 = st.session_state.new_a2
+    del st.session_state.new_a2
 
 prs = {
     "Custom": {"m": 1.0, "cw": 0.47, "s": 0.01, "v": 60.0, "a1": 45.0},
@@ -263,8 +267,8 @@ if fnd:
             st.toast(f"⚠️ Target out of reach! Best attempt: {me:.1f}m error.", icon="⚠️")
         else:
             st.toast(f"🎯 Target Locked! Elev={ba:.2f}°, Azi={bz:.2f}°", icon="🎯")
-        st.session_state.a1 = float(ba)
-        st.session_state.a2 = float(bz)
+        st.session_state.new_a1 = float(ba)
+        st.session_state.new_a2 = float(bz)
         st.rerun()
 
 rx, ry, rz, rt, d, h, rte, rfx, rfz = sim(a1, a2)
