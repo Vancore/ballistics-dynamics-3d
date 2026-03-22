@@ -87,7 +87,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Ballistic System")
+st.title("Ballistics System")
+if 'result_box' in st.session_state:
+    type, text = st.session_state.result_box
+    if type == "success":
+        st.success(text)
+    elif type == "warning":
+        st.warning(text)
+    del st.session_state.result_box
 
 if 'hist' not in st.session_state:
     st.session_state.hist = []
@@ -104,6 +111,10 @@ if 'new_a1' in st.session_state:
 if 'new_a2' in st.session_state:
     st.session_state.a2 = st.session_state.new_a2
     del st.session_state.new_a2
+if 'toast_message' in st.session_state:
+    msg, icon = st.session_state.toast_message
+    st.toast(msg, icon=icon)
+    del st.session_state.toast_message
 
 prs = {
     "Custom": {"m": 1.0, "cw": 0.47, "s": 0.01, "v": 60.0, "a1": 45.0},
@@ -264,9 +275,10 @@ if fnd:
 
         a1, a2 = ba, bz
         if me > 5.0:
-            st.toast(f"⚠️ Target out of reach! Best attempt: {me:.1f}m error.", icon="⚠️")
+            st.session_state.result_box = ("warning", f"Target out of reach! Best attempt: {me:.1f}m error.")
         else:
-            st.toast(f"🎯 Target Locked! Elev={ba:.2f}°, Azi={bz:.2f}°", icon="🎯")
+            st.session_state.result_box = ("success", f"Target Locked! Elev={ba:.2f}°, Azi={bz:.2f}°")
+        
         st.session_state.new_a1 = float(ba)
         st.session_state.new_a2 = float(bz)
         st.rerun()
