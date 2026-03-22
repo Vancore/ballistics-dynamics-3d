@@ -111,10 +111,7 @@ if 'new_a1' in st.session_state:
 if 'new_a2' in st.session_state:
     st.session_state.a2 = st.session_state.new_a2
     del st.session_state.new_a2
-if 'toast_message' in st.session_state:
-    msg, icon = st.session_state.toast_message
-    st.toast(msg, icon=icon)
-    del st.session_state.toast_message
+
 
 prs = {
     "Custom": {"m": 1.0, "cw": 0.47, "s": 0.01, "v": 60.0, "a1": 45.0},
@@ -144,7 +141,7 @@ pr = st.sidebar.selectbox(
 v = st.sidebar.number_input("Velocity (m/s):", format="%.2f", step=0.1, key="v")
 a1 = st.sidebar.number_input("Elevation (deg):", format="%.2f", step=0.1, key="a1")
 a2 = st.sidebar.number_input("Azimuth (deg):", format="%.2f", step=0.1, key="a2")
-g = st.sidebar.number_input("Gravity (m/s²):", value=9.80665, format="%.4f", step=0.0001)
+g = st.sidebar.number_input("Gravity (m/s²):", value=9.80665, min_value=0.0001, format="%.4f", step=0.0001)
 
 if env == "Atmosphere":
     st.sidebar.markdown("---")
@@ -166,7 +163,7 @@ if env == "Atmosphere":
     sp = st.sidebar.number_input("Spin (RPM):", value=0.0, format="%.0f", step=10.0)
     sa = st.sidebar.slider("Spin Angle (deg):", -180, 180, 0, step=5, help="0=Backspin, 90=Right, -90=Left, 180=Topspin")
 else:
-    m = cw = s = ro = ws = wa = sp = 1.0
+    m = cw = s = ro = ws = wa = sp = sa = 1.0
 
 st.sidebar.markdown("---")
 st.sidebar.header("🎯 Targeting")
@@ -256,24 +253,25 @@ if fnd:
         def get_error(ta, t_az):
             xx, yy, zz, *_ = sim(ta, t_az)
             if not xx: return float('inf')
-            return min(math.sqrt((x - tx)**2 + (y - ty)**2 + (z - tz)**2) for x, y, z in zip(xx, yy, zz))
-        for ta in [x * 0.5 for x in range(1, 179)]:
+            idx = min(range(len(xx)), key=lambda i: math.sqrt((xx[i] - tx)**2 + (zz[i] - tz)**2))
+            return math.sqrt((xx[idx] - tx)**2 + (yy[idx] - ty)**2 + (zz[idx] - tz)**2)
+        for ta in [x * 0.1 for x in range(1, 900)]:
             er = get_error(ta, bz)
             if er < me:
                 me, ba = er, ta
         for _ in range(3):
             xx, yy, zz, *_ = sim(ba, bz)
-            idx = min(range(len(xx)), key=lambda i: math.sqrt((xx[i] - tx)**2 + (yy[i] - ty)**2 + (zz[i] - tz)**2))
+            idx = min(range(len(xx)), key=lambda i: math.sqrt((xx[i] - tx)**2 + (zz[i] - tz)**2))
             cx, cz = xx[idx], zz[idx]
             if cx != 0:
                 ea = math.degrees(math.atan2(tz, tx)) - math.degrees(math.atan2(cz, cx))
                 bz += ea
+            me = get_error(ba, bz)
             for ad in [-0.2, -0.1, 0, 0.1, 0.2]:
                 ne = get_error(ba + ad, bz)
                 if ne < me:
                     me, ba = ne, ba + ad
 
-        a1, a2 = ba, bz
         if me > 5.0:
             st.session_state.result_box = ("warning", f"Target out of reach! Best attempt: {me:.1f}m error.")
         else:
@@ -286,7 +284,10 @@ if fnd:
 rx, ry, rz, rt, d, h, rte, rfx, rfz = sim(a1, a2)
 
 if sv:
-    st.session_state.hist.append({'x': rx, 'y': ry, 'z': rz, 'n': f"{pr} {a1:.1f}°/{a2:.1f}°"})
+    new_entry = f"{pr} {a1:.1f}°/{a2:.1f}°"
+    if not st.session_state.hist or st.session_state.hist[-1]['n'] != new_entry:
+        st.session_state.hist.append({'x': rx, 'y': ry, 'z': rz, 'n': new_entry})
+    
 
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("FINAL X", f"{rfx:.2f} m")
@@ -304,16 +305,16 @@ for i in st.session_state.hist:
                                line=dict(width=3, dash='dot'), name=i['n']))
     
 
-grid_x = [0, max(rfx, tx) * 1.1] 
-grid_z = [min(0, rfz, tz) - 20, max(0, rfz, tz) + 20]
+grid_x = [min(0, rfx, tx) - 50, max(0, rfx, tx) + 50] 
+grid_z = [min(0, rfz, tz) - 50, max(0, rfz, tz) + 50]
 
 fig.add_trace(go.Surface(
     x=grid_x,
     y=grid_z,
-    z=[[0, 0], [0, 0]],
+    z=[[min(0, ty), min(0, ty)], [min(0, ty), min(0, ty)]],
     colorscale=[[0, 'rgba(0, 242, 255, 0.05)'], [1, 'rgba(98, 252, 3, 0.75)']],
     showscale=False,
-    opacity=0.3,
+    opacity=0.2,
     hoverinfo='skip',
     name='Horizon'
 ))
