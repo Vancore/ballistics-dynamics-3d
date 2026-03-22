@@ -91,6 +91,8 @@ st.title("Ballistic Modeling System")
 
 if 'hist' not in st.session_state:
     st.session_state.hist = []
+if 'v' not in st.session_state:
+    st.session_state.v = 60.0
 if 'a1' not in st.session_state:
     st.session_state.a1 = 45.0
 if 'a2' not in st.session_state:
@@ -99,22 +101,35 @@ if 'a2' not in st.session_state:
 if 'hist' not in st.session_state:
     st.session_state.hist = []
 
+prs = {
+    "Custom": {"m": 1.0, "cw": 0.47, "s": 0.01, "v": 60.0, "a1": 45.0},
+    "Arrow": {"m": 0.05, "cw": 0.02, "s": 0.00005, "v": 85.0, "a1": 15.0},
+    "Howitzer Shell": {"m": 40.0, "cw": 0.15, "s": 0.02, "v": 800.0, "a1": 45.0},
+    "Golf Ball": {"m": 0.045, "cw": 0.2, "s": 0.0014, "v": 70.0, "a1": 12.0},
+    "Human Cannonball": {"m": 80.0, "cw": 0.8, "s": 0.4, "v": 25.0, "a1": 45.0}
+}
+
+def apply_preset():
+    selected = st.session_state.preset_choice
+    if selected != "Custom":
+        st.session_state.v = prs[selected]["v"]
+        st.session_state.a1 = prs[selected]["a1"]
+        st.session_state.a2 = 0.0
+
 st.sidebar.header("🚀 Primary Inputs")
 env = st.sidebar.radio("Environment:", ("Vacuum", "Atmosphere"))
-v = st.sidebar.number_input("Velocity (m/s):", value=60.0, format="%.2f", step=0.1)
-a1 = st.sidebar.number_input("Elevation (deg):", value=st.session_state.a1, format="%.2f", step=0.1)
-a2 = st.sidebar.number_input("Azimuth (deg):", value=st.session_state.a2, format="%.2f", step=0.1)
+
+pr = st.sidebar.selectbox(
+    "Projectile Preset:", 
+    list(prs.keys()), 
+    key="preset_choice", 
+    on_change=apply_preset
+)
+
+v = st.sidebar.number_input("Velocity (m/s):", format="%.2f", step=0.1, key="v")
+a1 = st.sidebar.number_input("Elevation (deg):", format="%.2f", step=0.1, key="a1")
+a2 = st.sidebar.number_input("Azimuth (deg):", format="%.2f", step=0.1, key="a2")
 g = st.sidebar.number_input("Gravity (m/s²):", value=9.80665, format="%.4f", step=0.0001)
-
-pr = st.sidebar.selectbox("Projectile Preset:", ["Custom", "Arrow", "Howitzer Shell", "Golf Ball", "Human Cannonball"])
-
-prs = {
-    "Arrow": {"m": 0.05, "cw": 0.02, "s": 0.00005},
-    "Howitzer Shell": {"m": 40.0, "cw": 0.15, "s": 0.02},
-    "Golf Ball": {"m": 0.045, "cw": 0.2, "s": 0.0014},
-    "Human Cannonball": {"m": 80.0, "cw": 0.8, "s": 0.4},
-    "Custom": {"m": 1.0, "cw": 0.47, "s": 0.01}
-}
 
 if env == "Atmosphere":
     st.sidebar.markdown("---")
@@ -271,6 +286,28 @@ fig.add_trace(go.Scatter3d(x=[tx], y=[tz], z=[ty], mode='markers',
 for i in st.session_state.hist:
     fig.add_trace(go.Scatter3d(x=i['x'], y=i['z'], z=i['y'], mode='lines', 
                                line=dict(width=3, dash='dot'), name=i['n']))
+    
+
+grid_x = [0, max(rfx, tx) * 1.1] 
+grid_z = [min(0, rfz, tz) - 20, max(0, rfz, tz) + 20]
+
+fig.add_trace(go.Surface(
+    x=grid_x,
+    y=grid_z,
+    z=[[0, 0], [0, 0]],
+    colorscale=[[0, 'rgba(0, 242, 255, 0.05)'], [1, 'rgba(98, 252, 3, 0.5)']],
+    showscale=False,
+    opacity=0.3,
+    hoverinfo='skip',
+    name='Horizon'
+))
+
+fig.update_traces(
+    contours_z=dict(show=True, usecolormap=True, highlightcolor="limegreen", project_z=True),
+    selector=dict(type='surface')
+)
+
+
 
 fig.update_layout(
     paper_bgcolor='rgba(0,0,0,0)',
