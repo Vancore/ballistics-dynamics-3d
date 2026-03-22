@@ -295,7 +295,7 @@ fig.add_trace(go.Surface(
     x=grid_x,
     y=grid_z,
     z=[[0, 0], [0, 0]],
-    colorscale=[[0, 'rgba(0, 242, 255, 0.05)'], [1, 'rgba(98, 252, 3, 0.5)']],
+    colorscale=[[0, 'rgba(0, 242, 255, 0.05)'], [1, 'rgba(98, 252, 3, 0.75)']],
     showscale=False,
     opacity=0.3,
     hoverinfo='skip',
@@ -321,17 +321,17 @@ fig.update_layout(
         aspectratio=dict(x=2, y=1, z=1),
         xaxis=dict(
             backgroundcolor="rgba(0, 0, 0, 0)",
-            gridcolor="#3e3e4e",
+            gridcolor="#a9a9b3",
             showbackground=True
         ),
         yaxis=dict(
             backgroundcolor="rgba(0, 0, 0, 0)", 
-            gridcolor="#3e3e4e",
+            gridcolor="#a9a9b3",
             showbackground=True
         ),
         zaxis=dict(
             backgroundcolor="rgba(0, 0, 0, 0)", 
-            gridcolor="#3e3e4e",
+            gridcolor="#a9a9b3",
             showbackground=True
         )
     )
